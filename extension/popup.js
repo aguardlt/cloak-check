@@ -1,4 +1,4 @@
-import { registrable, hostOf, pct } from './lib/analyze.js';
+import { VARIANTS, registrable, hostOf, pct } from './lib/analyze.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -27,7 +27,7 @@ async function init() {
   }
   $('site').textContent = hostOf(tab.url);
   if (await chrome.permissions.contains({ origins: [originPattern(tab.url)] })) return run();
-  $('startText').textContent = `CloakCheck needs your permission to request pages on ${registrable(hostOf(tab.url))}. Chrome will ask once per site.`;
+  $('startText').textContent = `CloakCheck needs your permission to request pages on ${registrable(hostOf(tab.url))}. Chrome will ask once per site. After that, pages on this site are also checked for hidden links each time you open them, and the icon shows how many were found.`;
   show('start');
 }
 
@@ -37,6 +37,7 @@ async function run() {
   if (!res?.ok) { $('errorText').textContent = 'Check failed: ' + (res?.error || 'unknown error'); return show('error'); }
   lastReport = res.report;
   render(res.report);
+  await renderBrowse();
   show('result');
 }
 
@@ -100,6 +101,30 @@ function render(r) {
     }
   }
 }
+
+async function renderBrowse() {
+  const form = $('browse');
+  form.replaceChildren();
+  if (tab.id == null) { form.hidden = $('browseNote').hidden = true; return; }
+  const state = await chrome.runtime.sendMessage({ type: 'browseState', tabId: tab.id });
+  const current = state?.id || 'human';
+  for (const v of VARIANTS) {
+    const label = el('label');
+    const input = el('input');
+    input.type = 'radio'; input.name = 'as'; input.value = v.id; input.checked = v.id === current;
+    label.append(input, ' ', v.id === 'human' ? 'Yourself' : v.label, el('small', '', v.id === 'human' ? 'normal browsing' : v.hint));
+    form.append(label);
+  }
+}
+
+$('browse').addEventListener('change', async (e) => {
+  const id = e.target.value;
+  const res = await chrome.runtime.sendMessage({ type: 'browseAs', tabId: tab.id, id });
+  const v = VARIANTS.find((x) => x.id === id);
+  $('browseNote').textContent = !res?.ok ? 'Could not switch: ' + (res?.error || 'unknown error')
+    : id === 'human' ? 'Back to normal browsing. The tab was reloaded.'
+    : `The tab was reloaded as ${v.label} and stays that way until you switch back or close it. Press "Run again" to scan what it shows now.`;
+});
 
 function el(tag, cls = '', text) {
   const e = document.createElement(tag);

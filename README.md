@@ -27,6 +27,10 @@ For each row it reports the HTTP status, text similarity with the visitor versio
 
 **2. Hidden content on the page you see.** The rendered page is scanned for outbound links a visitor cannot see: `display:none`, zero opacity, text under 2px, blocks positioned off-screen, zero-size boxes, text in the background colour. Hidden frames and inline scripts that `eval` encoded strings are listed as well. Links inside ordinary collapsed menus are counted but not flagged.
 
+**3. Passive watch.** On sites you have allowed, the hidden-content scan runs by itself every time a page finishes loading. The number of findings appears on the extension icon. This step makes no network requests. Use "Watch every site for hidden links" in the report to allow it everywhere.
+
+**4. Browse as a crawler.** Pick Googlebot, Bingbot, GPTBot, ClaudeBot or "Visitor from Google" in the report and the tab reloads with that signature. It keeps the signature while you click around, until you switch back to "Yourself" or close the tab. The icon shows which signature is active.
+
 ## Install
 
 The extension is not in the Chrome Web Store yet.
@@ -45,6 +49,7 @@ The extension is not in the Chrome Web Store yet.
 ## Limits
 
 - Only the User-Agent and Referer are changed. The request still leaves from your IP address. Malware that verifies crawler IP ranges will show the clean page to this tool. Google Search Console's URL Inspection is the way to see what the real Googlebot received.
+- Browse-as changes request headers only. Scripts on the page still see your real browser through `navigator.userAgent`, and your cookies are sent as usual.
 - The comparison uses the HTML the server returns. Content that JavaScript adds later is covered only by the hidden-content scan of the open tab.
 - Some malware shows the payload once per IP address or only to mobile devices. A clean result does not prove a clean site.
 - A site may lawfully serve different content to crawlers, for example a paywall. The findings are heuristics.
@@ -53,11 +58,11 @@ The extension is not in the Chrome Web Store yet.
 
 | Permission | Why |
 | --- | --- |
-| `activeTab`, `scripting` | read the open page to look for hidden links, only after you click the icon |
-| `declarativeNetRequestWithHostAccess` | set the User-Agent and Referer on the extension's own test requests |
+| `activeTab`, `scripting` | read the open page to look for hidden links: on click, and automatically on sites you have allowed |
+| `declarativeNetRequestWithHostAccess` | set the User-Agent and Referer on the extension's own test requests, and on a tab you switched to browse-as |
 | site access, asked per site | fetch the page you are checking |
 
-Nothing is collected or sent anywhere. There is no server, no analytics and no remote code. The header rule applies only to requests the extension itself makes, never to your browsing. See [PRIVACY.md](PRIVACY.md).
+Nothing is collected or sent anywhere. There is no server, no analytics and no remote code. Request headers of your own browsing change only in a tab you explicitly switched to a crawler signature. See [PRIVACY.md](PRIVACY.md).
 
 ## Development
 

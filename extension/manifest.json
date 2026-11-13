@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CloakCheck: see a page as Googlebot, Bingbot and AI crawlers",
   "short_name": "CloakCheck",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Compares what a page serves to visitors, search engines and AI crawlers, and finds hidden links. Spots SEO cloaking on hacked sites.",
   "minimum_chrome_version": "120",
   "action": { "default_popup": "popup.html", "default_title": "CloakCheck" },

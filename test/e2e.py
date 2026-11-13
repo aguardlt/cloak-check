@@ -115,7 +115,7 @@ def main():
             if 'exceptionDetails' in r: raise RuntimeError(json.dumps(r['exceptionDetails'])[:600])
             return r['result'].get('value')
 
-        results = {}
+        results = {}; badges = {}
         for name in ('hacked', 'clean'):
             url = f'http://127.0.0.1:{PORT}/{name}/'
             open_tab(url)
@@ -126,6 +126,8 @@ def main():
                 if tab_id is not None: break
                 time.sleep(0.5)
             assert tab_id is not None, f'tab not visible to the extension: {tabs}'
+            time.sleep(1)
+            badges[name] = sw_eval(f"chrome.action.getBadgeText({{tabId:{tab_id}}})")
             del SEEN[:]
             rep = sw_eval(f"runCheck({tab_id}, '{url}')")
             results[name] = (rep, list(SEEN), tab_id, url)
@@ -145,6 +147,8 @@ def main():
             print(('PASS  ' if cond else 'FAIL  ') + msg)
             ok = ok and bool(cond)
 
+        check(badges['hacked'] == '5', f"passive scan put the number of hidden items on the icon (got {badges['hacked']!r})")
+        check(badges['clean'] == '', 'passive scan leaves the icon empty on a clean page')
         rep, seen, _, _ = results['hacked']
         by = {v['id']: v for v in rep['variants']}
         uas = [s['ua'] for s in seen if s['path'] == '/hacked/']
@@ -164,6 +168,27 @@ def main():
         rep2 = results['clean'][0]
         check(rep2['level'] == 'ok' and all(v['level'] == 'ok' for v in rep2['variants']), 'clean site: every row ok')
         check(rep2['page']['level'] in ('ok', 'info') and not [l for l in rep2['page']['links'] if l['level'] != 'info'], 'clean site: collapsed menu link is not an alert')
+
+        # Browse as: the tab itself must be served the crawler version, and go back on reset.
+        _, _, tab_id, url = results['hacked']
+        def tab_title():
+            t = next(t for t in targets() if t['type'] == 'page' and t['url'] == url)
+            return WS(t['webSocketDebuggerUrl']).call('Runtime.evaluate', {'expression': 'document.title', 'returnByValue': True})['result'].get('value')
+        del SEEN[:]
+        check(sw_eval(f"browseAs({tab_id}, 'googlebot')") == 'googlebot', 'browse-as accepted Googlebot')
+        time.sleep(2)
+        nav = [x for x in SEEN if x['path'] == '/hacked/']
+        check(nav and all('Googlebot/2.1' in x['ua'] for x in nav), 'tab navigation carries the Googlebot User-Agent')
+        check('casino' in (tab_title() or '').lower(), 'tab shows the page served to Googlebot')
+        check(sw_eval(f"chrome.action.getBadgeText({{tabId:{tab_id}}})") == 'GB', 'icon shows the active crawler signature')
+        check(sw_eval(f"browseState({tab_id})") == 'googlebot', 'browse-as state survives in the rule')
+        clean_tab = results['clean'][2]
+        check(sw_eval(f"browseState({clean_tab})") is None, 'other tabs are not affected')
+        del SEEN[:]
+        sw_eval(f"browseAs({tab_id}, 'human')"); time.sleep(2)
+        nav = [x for x in SEEN if x['path'] == '/hacked/']
+        check(nav and not any('Googlebot' in x['ua'] for x in nav) and 'carrots' in (tab_title() or ''), 'switching back restores normal browsing')
+        check(sw_eval("chrome.declarativeNetRequest.getSessionRules().then(r=>r.length)") == 0, 'no header rules left behind')
         if not ok: print(json.dumps(rep, indent=1)[:3000])
 
         os.makedirs(os.path.join(ROOT, 'docs'), exist_ok=True)
