@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CloakCheck</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<header>
+  <div class="brand">CloakCheck</div>
+  <div class="site" id="site"></div>
+</header>
+<main id="main">
+  <section id="start" hidden>
+    <p id="startText"></p>
+    <button id="run" type="button">Check this page</button>
+    <p class="fine">The page is requested six times with different crawler signatures. Nothing is sent anywhere else.</p>
+  </section>
+  <section id="busy" hidden><p class="busy">Requesting the page as a visitor, search engines and AI crawlers…</p></section>
+  <section id="error" hidden><p id="errorText"></p></section>
+  <section id="result" hidden>
+    <div id="verdict" class="verdict"><div class="vtitle" id="vtitle"></div><div class="vsub" id="vsub"></div></div>
+    <h2>What each visitor gets</h2>
+    <table id="variants"><tbody></tbody></table>
+    <h2>Hidden content on this page</h2>
+    <div id="page"></div>
+    <div class="actions">
+      <button id="again" type="button" class="link">Run again</button>
+      <button id="copy" type="button" class="link">Copy report</button>
+      <button id="allsites" type="button" class="link">Allow on all sites</button>
+    </div>
+  </section>
+</main>
+<footer>
+  <span>Heuristics, not proof. Sites that verify crawler IP addresses can still hide content.</span>
+  <a href="https://aguard.lt" target="_blank" rel="noopener">aguard.lt</a>
+</footer>
+<script type="module" src="popup.js"></script>
+</body>
+</html>

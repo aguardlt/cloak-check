@@ -1,0 +1,12 @@
+{
+  "name": "cloak-check",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that compares what a page serves to visitors, search engines and AI crawlers, and finds hidden links.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/analyze.test.mjs",
+    "test:e2e": "python3 test/e2e.py"
+  }
+}
