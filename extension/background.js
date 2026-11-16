@@ -3,6 +3,8 @@ import { scanPage } from './lib/scan.js';
 
 const RULE_ID = 1;
 const MAX_HTML = 1_500_000;
+// Host of this extension's own pages: the extension id in Chrome, a per-install UUID in Firefox.
+const SELF_HOST = new URL(chrome.runtime.getURL('')).hostname;
 const CLIENT_HINTS = ['sec-ch-ua', 'sec-ch-ua-mobile', 'sec-ch-ua-platform'];
 
 // One check at a time: the header rule below is global to this extension.
@@ -18,7 +20,7 @@ async function setRequestHeaders(variant) {
     priority: 1,
     action: { type: 'modifyHeaders', requestHeaders },
     // Only requests made by this service worker, never the user's own browsing.
-    condition: { urlFilter: '|http', resourceTypes: ['xmlhttprequest'], tabIds: [chrome.tabs.TAB_ID_NONE], initiatorDomains: [chrome.runtime.id] },
+    condition: { urlFilter: '|http', resourceTypes: ['xmlhttprequest'], tabIds: [chrome.tabs.TAB_ID_NONE], initiatorDomains: [SELF_HOST] },
   }] : [];
   await chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: [RULE_ID], addRules });
 }
